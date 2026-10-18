@@ -1,32 +1,40 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"os"
 
 	"github.com/jcbondsii/aggregator/internal/config"
 )
 
+type state struct {
+	cfg *config.Config
+}
+
 func main() {
 	cfg, err := config.Read()
 	if err != nil {
-		log.Fatalf("Error reading config: %v", err)
+		log.Fatalf("error reading config: %v", err)
 	}
 
-	targetUser := "jcbondsii"
-	err = cfg.SetUser(targetUser)
+	programState := &state{
+		cfg: &cfg,
+	}
+
+	cmds := commands{
+		registeredCommands: make(map[string]func(*state, command) error),
+	}
+	cmds.register("login", handlerLogin)
+
+	if len(os.Args) < 2 {
+		log.Fatal("Usage: cli <command> [args...]")
+	}
+
+	cmdName := os.Args[1]
+	cmdArgs := os.Args[2:]
+
+	err = cmds.run(programState, command{Name: cmdName, Args: cmdArgs})
 	if err != nil {
-		log.Fatalf("Error setting user: %v", err)
+		log.Fatal(err)
 	}
-
-	fmt.Printf("Current user set to: %s\n", targetUser)
-
-	updatedCfg, err := config.Read()
-	if err != nil {
-		log.Fatalf("Error reading updated config: %v", err)
-	}
-
-	fmt.Println("--- Current Config File Contents ---")
-	fmt.Printf("Struct representation: %+v\n", updatedCfg)
-	fmt.Printf("Current User Field   : %s\n", updatedCfg.CurrentUserName)
 }
