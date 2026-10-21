@@ -58,3 +58,26 @@ func handlerRegister(s *state, cmd command) error {
 
 	return nil
 }
+
+func handlerListUsers(s *state, cmd command) error {
+	users, err := s.db.GetAllUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("couldn't retrieve users: %w", err)
+	}
+
+	if len(users) == 0 {
+		fmt.Println("No users found.")
+		return nil
+	}
+
+	fmt.Println("Registered Users:")
+	for _, user := range users {
+		fmt.Printf("* %s", user.Name)
+		if user.Name == s.cfg.CurrentUserName {
+			fmt.Println(" (current)")
+		}
+		fmt.Printf("\n")
+	}
+
+	return nil
+}
