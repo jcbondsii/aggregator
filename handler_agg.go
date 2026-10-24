@@ -8,14 +8,17 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/jcbondsii/aggregator/internal/database"
 )
 
 func handlerAggregate(s *state, cmd command) error {
-	//if len(cmd.Args) != 1 {
-	//return fmt.Errorf("usage: %s <feed_url>", cmd.Name)
-	//}
-	//feedURL := cmd.Args[0]
-	feedURL := "https://www.wagslane.dev/index.xml"
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("usage: %s <feed_url>", cmd.Name)
+	}
+	feedURL := cmd.Args[0]
+	//feedURL := "https://www.wagslane.dev/index.xml"
 
 	ctx := context.Background()
 	rssFeed, err := fetchFeed(ctx, feedURL)
@@ -70,4 +73,42 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	}
 
 	return &rssFeed, nil
+}
+
+func handlerAddFeed(s *state, cmd command) error {
+	if len(cmd.Args) != 2 {
+		return fmt.Errorf("usage: %s <feed_name> <feed_url>", cmd.Name)
+	}
+	feedName := cmd.Args[0]
+	feedURL := cmd.Args[1]
+
+	ctx := context.Background()
+	_, err := fetchFeed(ctx, feedURL)
+	if err != nil {
+		return fmt.Errorf("failed to fetch feed: %w", err)
+	}
+
+	feedID := uuid.New()
+	now := time.Now()
+
+	user, err := s.db.GetUser(ctx, s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("couldn't get user: %w", err)
+	}
+
+	_, err = s.db.CreateFeed(ctx, database.CreateFeedParams{
+		ID:        feedID,
+		CreatedAt: now,
+		UpdatedAt: now,
+		Name:      feedName,
+		Url:       feedURL,
+		UserID:    uuid.NullUUID{UUID: user.ID, Valid: true},
+	})
+
+	if err != nil {
+		return fmt.Errorf("couldn't create feed: %w", err)
+	}
+
+	fmt.Printf("Feed '%s' added successfully!\n", feedName)
+	return nil
 }
