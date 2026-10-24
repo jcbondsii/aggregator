@@ -16,7 +16,7 @@ type Feed struct {
 	UpdatedAt time.Time
 	Name      string
 	Url       string
-	UserID    uuid.NullUUID
+	UserID    uuid.UUID
 }
 
 type User struct {
@@ -24,9 +24,4 @@ type User struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Name      string
-}
-
-type UserFeed struct {
-	UserID uuid.UUID
-	FeedID uuid.UUID
 }

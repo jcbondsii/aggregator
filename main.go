@@ -5,10 +5,10 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/lib/pq"
-
 	"github.com/jcbondsii/aggregator/internal/config"
 	"github.com/jcbondsii/aggregator/internal/database"
+
+	_ "github.com/lib/pq"
 )
 
 type state struct {
@@ -21,14 +21,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("error reading config: %v", err)
 	}
+
 	db, err := sql.Open("postgres", cfg.DBURL)
 	if err != nil {
-		log.Fatalf("error connecting to database: %v", err)
+		log.Fatalf("error connecting to db: %v", err)
 	}
 	defer db.Close()
+	dbQueries := database.New(db)
 
 	programState := &state{
-		db:  database.New(db),
+		db:  dbQueries,
 		cfg: &cfg,
 	}
 
@@ -39,8 +41,9 @@ func main() {
 	cmds.register("register", handlerRegister)
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerListUsers)
-	cmds.register("agg", handlerAggregate)
+	cmds.register("agg", handlerAgg)
 	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("feeds", handlerListFeeds)
 
 	if len(os.Args) < 2 {
 		log.Fatal("Usage: cli <command> [args...]")
